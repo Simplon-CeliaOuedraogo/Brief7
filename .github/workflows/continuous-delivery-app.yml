@@ -1,1 +1,10 @@
+name: Continuous Deployment Voting App
 
+on:
+  push:
+    branches:
+      - 'main'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
