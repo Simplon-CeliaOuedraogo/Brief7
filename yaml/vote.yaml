@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: vote
-        image: whujin11e/public:azure_voting_app
+        image: simplonasa/azure_voting_app
         ports:
         - containerPort: 80
         resources:
