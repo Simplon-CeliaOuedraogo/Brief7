@@ -5,7 +5,7 @@ metadata:
   labels:
     app: votelabel
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: votelabel
@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: vote
-        image: simplonasa/azure_voting_app
+        image: simplonasa/azure_voting_app:v1.0.0
         ports:
         - containerPort: 80
         resources:
