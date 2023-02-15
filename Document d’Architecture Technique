@@ -1,0 +1,54 @@
+# Document d’Architecture Technique : Brief 7
+
+## Contexte
+
+Projet : Déploiement d'un pipeline de déploiement continu pour l’application Azure Voting App et sa base de données Redis.
+
+### Besoins fonctionnels
+
+L'application de vote permet aux utilisateurs lambdas, connaissant le DNS ou l'adresse IP, de voter pour deux options (Windows/Linux), ou de remettre le compte à zéro.
+
+Le pipeline de déploiement, créé en utilisant Jenkins, permet de déployer automatiquement toutes les heures la mise à jour à la place de l’ancienne version à partir de l’image docker de l’application.
+
+![](https://i.imgur.com/zpyX7b7.png)
+
+### Contraintes techniques
+
+L'application de vote doit être résiliente.
+L'accès à la base de données REDIS nécessite un mot de passe, stocké dans un secret Kubernetes.
+Jenkins a été installé sur une VM séparée.
+Les VMs créées nécessitent une clé SSH afin d'y accéder.
+
+## Topologie
+
+![](https://i.imgur.com/dKgO9Sy.png)
+
+### Représentation opérationnelle
+
+L'application est mise à jour toutes les heures à partir de l’image docker.
+Les données seront sauvegardées sur un disque externe relié à la base de données REDIS, protégé par un mot de passe.
+
+### Représentation fonctionnelle
+
+Le pipeline clone le script de déploiement à partir de GitHub sur la VM sur laquelle Jenkins est installée, le déploie, puis efface le script de la VM.
+Cela est répété toutes les heures afin que l'application soit mise à jour à partir de l'image docker toutes les heures.
+
+L'utilisateur se connectera via le Web en utilisant un nom de domaine, traduit par le DNS en adresse IP (http://20.253.50.52/), afin d'arriver à l'application de vote.
+
+### Représentation technique
+
+- Jenkins sera installé sur une VM à part de l'application. Le DNS est vmjenkins.eastus.cloudapp.azure.com, l'adresse IP est 20.253.50.52.
+- Sur la VM Jenkins, il y a deux règles de sécurité (HTTP : 8080, SSH : 22).
+- L'image utilisée pour la base de donnée est la dernière image REDIS. Cela est à changer hors phase de test. Le port du container REDIS sera 6379. Le mot de passe REDIS sera stocké dans un Secret.
+- L'image de l'application de vote sera trouvée à : simplonasa/azure_voting_app. Le port du container de l'application sera 80.
+- L'autoscaler permet un scale-in et scale-out de l'application de vote automatique.
+
+## Choix de l’architecture
+
+- Jenkins sera utilisé pour écrire le pipeline. C'est un logiciel open-source, donc son utilisation ne coutera rien.
+- La VM Jenkins utilise Debian 11, qui est la plus adaptée pour l'installation de Java 11.
+- Le CPU de l'application de vote aura a disposition 250 millicpu, avec un maximum de 500 millicpu.
+- Le pod de l'application de vote aura 1 réplica.
+- Le stockage de la VM est de type disque, Standard LRS.
+- Le stockage de l'application de vote, de type disque, Standard LRS, fera 1Gi.
+- Jusqu'à 8 VMs peuvent être déployées durant un scale-out lorsqu'on atteint 70% du CPU.
